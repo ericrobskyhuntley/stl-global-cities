@@ -3,7 +3,7 @@
 
 <head>
     <meta charset=utf-8 />
-    <title>Module 15 Lab Template</title>
+    <title>STL Megacities Map</title>
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
 
     <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
@@ -139,12 +139,6 @@
 
 <body>
     <div id='map'></div>
-    <h1>Unemployment in Kentucky Counties | 2001-2013</h1>
-        <div id="ui-controls">
-            <label><span class="min">2000</span><span class="max">2013</span>
-                <input type="range" min="2000", max="2013",
-                        value="2000", step="1" class="year-slider"></input>
-            </label>
     </div>
 
 <script>
@@ -172,6 +166,9 @@
   };
 
   var map = L.map('map', options);
+  var year1 = '_2015';
+  var year0 = '_2010';
+  var cities;
 
   $(document).ready(function() {
 
@@ -182,8 +179,6 @@
     map.addLayer(tiles);
   });
 
-  // var cities,
-  // year = "_2015";
 
   $.getJSON('https://jeffs.carto.com/api/v2/sql?format=GeoJSON&q=SELECT * FROM public.un_cities_data')
   .done(function(data) {
@@ -194,26 +189,47 @@
 
   function getRadius(area) {
       var radius = Math.sqrt(area/Math.PI);
-      return radius * 0.3;
+      return radius * 0.15;
   }
 
-  // function getColor(d, breaks) {
-  //     if (d <= breaks[1]) {
-  //       return '#FFFFFF';
-  //     } else if (d <= breaks[2]) {
-  //       return '#FFBFEC';
-  //     } else if (d <= breaks[3]) {
-  //       return '#FF7FD9';
-  //     } else if (d <= breaks[4]) {
-  //       return '#FF3FC6'
-  //     } else if (d <= breaks[5]) {
-  //       return '#FF00B4'
-  //     } else {
-  //       return 'red'
-  //     }
-  // }
+  function getClassBreaks() {
+
+      var values = [];
+
+      cities.eachLayer(function(layer) {
+          pct_change = (layer.feature.properties[year1] - layer.feature.properties[year0]) / layer.feature.properties[year0];
+          if (pct_change > 0) {
+            var value = Number(pct_change);
+            values.push(value);
+          }
+      });
+
+      var breaks = ss.quantile(values, [0, 0.2, 0.4, 0.6, 0.8, 1]);
+      breaks.unshift(0);
+      // breaks = [-Infinity, 0, 0.05, 0.10, 0.15, 1]
+      console.log(breaks);
+      return breaks;
+  }
+
+  // function to get the color value
+  function getColor(d, breaks) {
+      if(d <= breaks[0]) {
+          return '#7b3294';
+      } else if(d <= breaks[1]) {
+          return '#f7f7f7';
+      } else if(d <= breaks[2]) {
+          return '#d9f0d3';
+      } else if(d <= breaks[3]) {
+          return '#a6dba0'
+      } else if(d <= breaks[4]) {
+          return '#5aae61'
+      } else if(d <= breaks[5]) {
+          return '#1b7837'
+      }
+  }
 
   function createPropSymbols(data) {
+
     cities = L.geoJson(data, {
         pointToLayer: function(feature,latlng) {
             return L.circleMarker(latlng, {
@@ -225,30 +241,8 @@
 
         onEachFeature: function(feature, layer) {
             var props = feature.properties;
-            var source = props.source;
             var featLatLng = L.latLng(feature.geometry.coordinates[1],feature.geometry.coordinates[0]);
-            layer.setRadius(getRadius(props._2000));
-            // layer.setStyle({
-            //     fillColor: getColor(props[year], breaks)
-            // });
-
-
-
-            // console.log(source['Hydro']);
-
-            // if (source['Natural Gas']) {
-            //     layer.setStyle(hydroColor).setRadius(getRadius(source['Natural Gas']));
-            // }
-            //
-            // else if (source['Hydro']) {
-            //     layer.setStyle(natGasColor).setRadius(getRadius(source['Hydro']));
-            // }
-
-            // var content = '<b>'+props.plant_name+'</b><br>'+props.capacity+' MW<br>';
-            // for(var fuel in source){
-            //     content+='<b>'+fuel+'</b>: '+source[fuel].toLocaleString()+' MW<br>';
-            // }
-            // content+='This plant is <b>'+(featLatLng.distanceTo(cityLatLng)/1000).toLocaleString()+' km</b> from '+city.name;
+            layer.setRadius(getRadius(props[year1]));
 
             layer.on('mouseover', function() {
                 // layer.bindPopup(content).openPopup();
@@ -265,6 +259,15 @@
             });
         }
     }).addTo(map);
+
+    breaks = getClassBreaks(data);
+    cities.eachLayer(function(layer) {
+      pct_change = (layer.feature.properties[year1] - layer.feature.properties[year0]) / layer.feature.properties[year0];
+      var props = layer.feature.properties;
+      layer.setStyle({
+          fillColor: getColor(pct_change, breaks)
+      });
+    });
   }
 
 </script>
