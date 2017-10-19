@@ -81,12 +81,16 @@
         #ui-controls {
             width: 176px;
             padding: 8px 15px 8px 15px;
-            background: rgba(75,75,75,0.8);
+            background: rgba(75,75,75,0);
             color: whitesmoke;
             border-radius: 5px;
         }
         .year-slider {
             width: 100%;
+            -webkit-appearance: none !important;
+            background:white;
+            height:1px;
+            color: white;
         }
 
         label {
@@ -139,6 +143,10 @@
 
 <body>
     <div id='map'></div>
+    <div id="ui-controls">
+      <label><span class="min">1955</span><span class="max">2025</span>
+          <input type="range" min="1955", max="2025", value="2015", step="5" class="year-slider"></input>
+      </label>
     </div>
 
 <script>
@@ -154,9 +162,8 @@
 
   // define global variables
   var map = L.map('map', options),
-  year1 = '_2015',
-  year0 = '_2010',
   cities;
+  var year = 2015;
 
   // generate array of years
   var yearMin = 1950,
@@ -180,20 +187,20 @@
 
   $.getJSON('https://jeffs.carto.com/api/v2/sql?format=GeoJSON&q=SELECT * FROM public.un_cities_data')
   .done(function(data) {
-    console.log(data.features[0].properties);
     cities = L.geoJson(data, {
         pointToLayer: function(feature,latlng) {
             return L.circleMarker(latlng, {
                 color: 'white',
                 weight: 1,
-                fillOpacity: 0.5
+                fillOpacity: 0.5,
+                className: 'animated-icon'
             });
         },
 
         onEachFeature: function(feature, layer) {
             var props = feature.properties;
             var featLatLng = L.latLng(feature.geometry.coordinates[1],feature.geometry.coordinates[0]);
-            layer.setRadius(getRadius(props[year1]));
+            // layer.setRadius(getRadius(props['_' + String(year)]));
 
             layer.on('mouseover', function() {
                 // layer.bindPopup(content).openPopup();
@@ -213,6 +220,8 @@
 
     createPropSymbols();
     drawInfo();
+    // drawLegend();
+    drawSlider();
   })
   .fail(function() { alert("There has been a problem loading the data.")});
 
@@ -226,17 +235,16 @@
       var values = [];
 
       cities.eachLayer(function(layer) {
-          pct_change = (layer.feature.properties[year1] - layer.feature.properties[year0]) / layer.feature.properties[year0];
-          if (pct_change > 0) {
-            var value = Number(pct_change);
-            values.push(value);
-          }
+        var props = layer.feature.properties;
+        pct_change = (props['_' + String(year)] - props['_' + String(year - 5)]) / props['_' + String(year - 5)];
+        if (pct_change > 0) {
+          var value = Number(pct_change);
+          values.push(value);
+        }
       });
 
       var breaks = ss.quantile(values, [0, 0.2, 0.4, 0.6, 0.8, 1]);
       breaks.unshift(0);
-      // breaks = [-Infinity, 0, 0.05, 0.10, 0.15, 1]
-      console.log(breaks);
       return breaks;
   }
 
@@ -244,15 +252,15 @@
   function getColor(d, breaks) {
       if(d <= breaks[0]) {
           return '#7b3294';
-      } else if(d <= breaks[1]) {
+      } else if (d <= breaks[1]) {
           return '#f7f7f7';
-      } else if(d <= breaks[2]) {
+      } else if (d <= breaks[2]) {
           return '#d9f0d3';
-      } else if(d <= breaks[3]) {
+      } else if (d <= breaks[3]) {
           return '#a6dba0'
-      } else if(d <= breaks[4]) {
+      } else if (d <= breaks[4]) {
           return '#5aae61'
-      } else if(d <= breaks[5]) {
+      } else if (d <= breaks[5]) {
           return '#1b7837'
       }
   }
@@ -260,12 +268,14 @@
   function createPropSymbols() {
 
     breaks = getClassBreaks(cities);
+
     cities.eachLayer(function(layer) {
-      pct_change = (layer.feature.properties[year1] - layer.feature.properties[year0]) / layer.feature.properties[year0];
       var props = layer.feature.properties;
+      pct_change = (props['_' + String(year)] - props['_' + String(year - 5)]) / props['_' + String(year - 5)];
       layer.setStyle({
           fillColor: getColor(pct_change, breaks)
       });
+      layer.setRadius(getRadius(props['_' + String(year)]));
 
       var content = '<strong>' + props["urbanagg"] + '</strong><br>';
       //  + ': <b> ' + props[year] + '%</b>';
@@ -288,6 +298,7 @@
     // cities.on('mouseout', function() {
     //     $(".info").hide();
     // });
+
   }
 
   function drawInfo() {
@@ -304,6 +315,59 @@
       info.addTo(map);
       // but hide it (until user mouses over a feature)
       $(".info").hide();
+  }
+
+  // function drawLegend() {
+  //     var legend = L.control({position: 'topright'});
+  //
+  //     legend.onAdd = function (map) {
+  //         var div = L.DomUtil.create('div', 'legend');
+  //         return div;
+  //     };
+  //
+  //     legend.addTo(map);
+  // }
+  //
+  // function updateLegend(breaks) {
+  //     //select legend class and fill with HTML title
+  //     var legend = $('.legend');
+  //     // var legend = $('.legend').html("<h1>Test</h1><ul>");
+  //     legend.append('<h1>Test</h1>');
+  //     //for each class, append colored <span> and range
+  //     // for (var i = 0; i < breaks.length-1; i++) {
+  //     //     var color = getColor(breaks[i + 1], breaks);
+  //     //
+  //     //     legend.append('<li><span style="background:' + color + '"></span> ' +
+  //     //         (breaks[i]).toFixed(2) + ' &mdash; ' +
+  //     //         (breaks[i + 1]).toFixed(2) + '</li>');
+  //     // }
+  //     // legend.append("</ul>");
+  // }
+
+  function drawSlider() {
+      var sliderControl = L.control({ position: 'bottomleft'} );
+
+      // when we add this control object to the map
+      sliderControl.onAdd = function(map) {
+
+          // select an existing DOM element with an id of "ui-controls"
+          var slider = L.DomUtil.get("ui-controls");
+
+              // when the user clicks on the slider element
+              L.DomEvent.addListener(slider, 'mousedown', function(e) {
+
+                  // prevent the click event from bubbling up to the map
+                  L.DomEvent.stopPropagation(e);
+
+              });
+
+          // return the slider from the onAdd method
+          return slider;
+      }
+
+      // add the control object containing our slider element to the map
+      sliderControl.addTo(map);
+
   }
 
   function updateInfo(layer) {
@@ -353,7 +417,6 @@
       for (var i = 0; i < years.length; i++) {
           var pop = Number(props['_'+String(years[i])]);
           data.push({year: years[i], population: pop});
-          console.log(data);
 
           // locate maximum and minimum unemployment values with which to set
           // Y-axis scale domain.
@@ -449,6 +512,15 @@
           .call(yAxis);
 
   }
+
+  //select element class year-slider
+  $(".year-slider")
+  //when the input value changes...
+  .on('input change', function() {
+      //set year equal to slider value and redraw the map.
+      year = $(this).val();
+      createPropSymbols();
+  });
 
 </script>
 </body>
