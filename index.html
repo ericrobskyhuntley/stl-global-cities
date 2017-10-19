@@ -169,12 +169,21 @@
   var year1 = '_2015';
   var year0 = '_2010';
   var cities;
+  // generate array of years
+  var yearMin = 1950,
+  yearMax = 2025,
+  years = [];
+  for(var i=1950;i<=2025;i+=5){
+    years.push(i)
+  }
 
   $(document).ready(function() {
 
     var tiles = L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
-        subdomains: 'abcd'
+        subdomains: 'abcd',
+        minZoom: 0,
+        maxZoom: 18
     });
     map.addLayer(tiles);
   });
@@ -183,7 +192,38 @@
   $.getJSON('https://jeffs.carto.com/api/v2/sql?format=GeoJSON&q=SELECT * FROM public.un_cities_data')
   .done(function(data) {
     console.log(data.features[0].properties);
-    createPropSymbols(data);
+    cities = L.geoJson(data, {
+        pointToLayer: function(feature,latlng) {
+            return L.circleMarker(latlng, {
+                color: 'white',
+                weight: 1,
+                fillOpacity: 0.5
+            });
+        },
+
+        onEachFeature: function(feature, layer) {
+            var props = feature.properties;
+            var featLatLng = L.latLng(feature.geometry.coordinates[1],feature.geometry.coordinates[0]);
+            layer.setRadius(getRadius(props[year1]));
+
+            layer.on('mouseover', function() {
+                // layer.bindPopup(content).openPopup();
+                layer.setStyle({
+                    fillOpacity: 1
+                });
+            });
+
+            layer.on('mouseout', function() {
+                // layer.closePopup();
+                layer.setStyle({
+                    fillOpacity: 0.5
+                });
+            });
+        }
+    }).addTo(map);
+
+    createPropSymbols();
+    drawInfo();
   })
   .fail(function() { alert("There has been a problem loading the data.")});
 
@@ -228,46 +268,152 @@
       }
   }
 
-  function createPropSymbols(data) {
+  function createPropSymbols() {
 
-    cities = L.geoJson(data, {
-        pointToLayer: function(feature,latlng) {
-            return L.circleMarker(latlng, {
-                color: 'white',
-                weight: 1,
-                fillOpacity: 0.5
-            });
-        },
-
-        onEachFeature: function(feature, layer) {
-            var props = feature.properties;
-            var featLatLng = L.latLng(feature.geometry.coordinates[1],feature.geometry.coordinates[0]);
-            layer.setRadius(getRadius(props[year1]));
-
-            layer.on('mouseover', function() {
-                // layer.bindPopup(content).openPopup();
-                layer.setStyle({
-                    fillOpacity: 1
-                });
-            });
-
-            layer.on('mouseout', function() {
-                // layer.closePopup();
-                layer.setStyle({
-                    fillOpacity: 0.5
-                });
-            });
-        }
-    }).addTo(map);
-
-    breaks = getClassBreaks(data);
+    breaks = getClassBreaks(cities);
     cities.eachLayer(function(layer) {
       pct_change = (layer.feature.properties[year1] - layer.feature.properties[year0]) / layer.feature.properties[year0];
       var props = layer.feature.properties;
       layer.setStyle({
           fillColor: getColor(pct_change, breaks)
       });
+
+      var content = '<strong>' + props["urbanagg"] + '</strong><br>';
+      //  + ': <b> ' + props[year] + '%</b>';
+
+      //underwater basketweaving
+      layer.bindPopup(content);
+      //overheating, undereating
+      layer.on('mouseover', function() {
+          updateInfo(this);
+      });
+
     });
+
+    //on mouseover, show the info box
+    cities.on('mouseover', function() {
+        $(".info").show();
+
+    });
+    // on mouseout, hide the info box
+    cities.on('mouseout', function() {
+        $(".info").hide();
+    });
+  }
+
+  function drawInfo() {
+      // create a leaflet control in the top right of the screen
+      var info = L.control({position: 'bottomright'});
+
+      // when info control is added
+      info.onAdd = function(map) {
+          // create a <div> of class 'info'
+          var div = L.DomUtil.create('div', 'info');
+          return div;
+      }
+      // add <div> to map
+      info.addTo(map);
+      // but hide it (until user mouses over a feature)
+      $(".info").hide();
+  }
+
+  function updateInfo(layer) {
+      //create 'shortcut' variable to layer properties
+      var props = layer.feature.properties;
+
+      //create info box HTML content, establishing a header...
+      var header = '<h3>' + props['urbanagg'] + '</h3>';
+      $(".info").html(header);
+
+      //Set size variables
+      var m = {top: 10, right: 20, bottom: 20, left: 30},
+      w = 400 - m.left - m.right,
+      h = 200 - m.top - m.bottom;
+
+      //Y-axis scale method
+      var y = d3.scale.linear()
+          .range([h,0]);
+
+      //X-axis scale method
+      var x = d3.scale.linear()
+          .range([0, w]);
+
+      //path constructor for line grapht data
+      var valueLine = d3.svg.line()
+          .x(function(d) { return x(d.year); })
+          .y(function(d) { return y(d.population); })
+          .interpolate("linear");
+
+      //select div of class info and append an svg to contain line graph
+      var svg = d3.select(".info")
+          .append("svg")
+              .attr("width", w + m.left + m.right)
+              .attr("height", h + m.top + m.bottom + 30)
+          .append("g")
+              .attr("transform", "translate(" + m.left + "," + m.top + ")");
+
+      //create empty data variable that will contain annual unemployment data
+      //for a given feature.
+      var data = [];
+      var popMin = Number.POSITIVE_INFINITY;
+      var popMax = Number.NEGATIVE_INFINITY;
+
+      // for each year, add year and unemployment rate as properties of a data
+      // variable.
+
+      for (var i = 0; i < years.length; i++) {
+          var pop = Number(props['_'+String(years[i])]);
+          data.push({year: years[i], population: pop});
+          console.log(data);
+
+          // locate maximum and minimum unemployment values with which to set
+          // Y-axis scale domain.
+          if (pop < popMin) popMin = pop;
+          if (pop > popMax) popMax = pop;
+      }
+
+      //Declare X axis constructor
+      var xAxis = d3.svg.axis().scale(x)
+          //Format tick labels as dates (i.e., no comma-separation)
+          .tickFormat(d3.format("d"))
+          .orient("bottom")
+          //Display every year.
+          .ticks(data.length);
+
+      //Declare Y axis constructor
+      var yAxis = d3.svg.axis().scale(y)
+          .orient("left")
+          .ticks(5);
+
+      //Set X and Y axis scale domains
+      x.domain([years[0], years[years.length-1]]);
+      y.domain([popMin,popMax]);
+
+      //Draw line graph
+      svg.append("path")
+          .attr("d",valueLine(data))
+          .attr("class", "line");
+
+      //append X axis
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + h + ")")
+          .call(xAxis)
+          .selectAll("text")
+          // Rotate text 65 degrees
+          .style("text-anchor", "end")
+          .attr("dx", "-.8em")
+          .attr("dy", ".15em")
+          .attr("transform", function(d) {
+              return "rotate(-65)"
+              });
+
+      // Append Y Axis
+      svg.append("g")
+          .attr("class", "y axis")
+          .attr("outerTickSize", 0)
+          .call(yAxis);
+
   }
 
 </script>
