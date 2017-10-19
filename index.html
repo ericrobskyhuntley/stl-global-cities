@@ -104,7 +104,7 @@
         .info {
             padding: 6px 8px;
             font-size: 1em;
-            background: rgba(75,75,75,0.8);
+            background: rgba(75,75,75,0.0);
             color: whitesmoke;
             box-shadow: 0 0 15px rgba(0,0,0,0.2);
             border-radius: 5px;
@@ -117,15 +117,15 @@
 
         .line {
             fill: none;
-            stroke: #FF00B4;
-            stroke-width: 1.5px;
+            stroke: white;
+            stroke-width: 1px;
         }
 
         .axis path,
         .axis line {
             fill: none;
             stroke: white;
-            stroke-width: 1;
+            stroke-width: 0.5;
             shape-rendering: crispEdges;
             color: white;
         }
@@ -152,29 +152,18 @@
       zoomControl: false
   }
 
-  var defaultStyle = {
-      color: '#ccbbcc',
-      weight: 1.5,
-      fillOpacity: 0.9
-  };
+  // define global variables
+  var map = L.map('map', options),
+  year1 = '_2015',
+  year0 = '_2010',
+  cities;
 
-  var highlightStyle = {
-      weight: 5,
-      color: '#FFE13E',
-      opacity: 0.95,
-      fillOpacity: 1
-  };
-
-  var map = L.map('map', options);
-  var year1 = '_2015';
-  var year0 = '_2010';
-  var cities;
   // generate array of years
   var yearMin = 1950,
   yearMax = 2025,
   years = [];
   for(var i=1950;i<=2025;i+=5){
-    years.push(i)
+    years.push(i);
   }
 
   $(document).ready(function() {
@@ -296,9 +285,9 @@
 
     });
     // on mouseout, hide the info box
-    cities.on('mouseout', function() {
-        $(".info").hide();
-    });
+    // cities.on('mouseout', function() {
+    //     $(".info").hide();
+    // });
   }
 
   function drawInfo() {
@@ -326,7 +315,7 @@
       $(".info").html(header);
 
       //Set size variables
-      var m = {top: 10, right: 20, bottom: 20, left: 30},
+      var m = {top: 10, right: 20, bottom: 20, left: 60},
       w = 400 - m.left - m.right,
       h = 200 - m.top - m.bottom;
 
@@ -390,9 +379,54 @@
       y.domain([popMin,popMax]);
 
       //Draw line graph
-      svg.append("path")
+      var p = svg.append("path")
           .attr("d",valueLine(data))
           .attr("class", "line");
+
+      // Set range for dashed line
+      var dashBetweenX = [2015, 2050]
+        path = p.node(),
+        totalLen = path.getTotalLength();
+
+
+      // find the corresponding line lengths
+      var dashBetweenL = dashBetweenX.map(function(d,i){
+
+        var beginning = 0,
+            end = totalLen,
+            target = null,
+            d = x(d);
+
+        // find the line lengths the correspond to our X values
+        // stolen from @duopixel from http://bl.ocks.org/duopixel/3824661
+        while (true){
+          target = Math.floor((beginning + end) / 2);
+          pos = path.getPointAtLength(target);
+          if ((target === end || target === beginning) && pos.x !== d) {
+              break;
+          }
+          if (pos.x > d) end = target;
+          else if (pos.x < d) beginning = target;
+          else break; //position found
+        }
+
+        return target;
+      })
+
+      // draw the dashes
+      var sd =  dashBetweenL[0],
+          dp = dashBetweenL[0],
+          count = 0;
+      while (dp < dashBetweenL[1]){
+        dp += 2;
+        sd += ", 2";
+        count++;
+      }
+
+      if (count % 2 == 0)
+        sd += ", 2";
+      sd += ", " + (totalLen - dashBetweenL[1]);
+      p.attr("stroke-dasharray", sd);
 
       //append X axis
       svg.append("g")
