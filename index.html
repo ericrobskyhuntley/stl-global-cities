@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8 />
+    <title>Module 15 Lab Template</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://unpkg.com/simple-statistics@5.0.0/dist/simple-statistics.min.js"></script>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" integrity="sha512-M2wvCLH6DSRazYeZRIm1JnYyh22purTM+FDB5CsyxtQJYeKq83arPe5wgbNmcFXGqiSH2XR8dT/fJISVA1r/zQ==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js" integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log==" crossorigin=""></script>
+    <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: whitesmoke;
+            font-family: Lato, sans-serif;
+            color: #0D0000;
+        }
+        header {
+            padding: 6px 10%;
+        }
+        h1 {
+            position: absolute;
+            z-index: 100;
+            top: 10px;
+            left: 15px;
+            padding: 8px 15px;
+            margin: 0;
+            color: whitesmoke;
+            font-size: 1.5em;
+            background: rgba(75,75,75,0.8);
+            border-radius: 5px;
+        }
+        #map {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            bottom: 0;
+        }
+        footer {
+            padding: 6px 10%;
+            width: 80%;
+        }
+        p {
+            font-size: 1em;
+            color: #001323;
+        }
+
+        .legend {
+            padding: 6px 8px;
+            font-size: 1em;
+            background: rgba(75,75,75,0.8);
+            color: whitesmoke;
+            border-radius: 5px;
+            width: 160px;
+        }
+        .legend h3 {
+            font-size: 1.1em;
+            font-weight: bold;
+            line-height: 1em;
+            color: whitesmoke;
+            margin: 0;
+        }
+        .legend li {
+            list-style-type: none;
+            height: 22px;
+        }
+        .legend span {
+            width: 30px;
+            height: 20px;
+            float: left;
+            margin-right: 10px;
+        }
+
+        #ui-controls {
+            width: 176px;
+            padding: 8px 15px 8px 15px;
+            background: rgba(75,75,75,0.8);
+            color: whitesmoke;
+            border-radius: 5px;
+        }
+        .year-slider {
+            width: 100%;
+        }
+
+        label {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        #ui-controls .min {
+            float: left;
+        }
+        #ui-controls .max {
+            float: right;
+        }
+
+        .info {
+            padding: 6px 8px;
+            font-size: 1em;
+            background: rgba(75,75,75,0.8);
+            color: whitesmoke;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .info h3 {
+            margin:0;
+        }
+
+        .line {
+            fill: none;
+            stroke: #FF00B4;
+            stroke-width: 1.5px;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: white;
+            stroke-width: 1;
+            shape-rendering: crispEdges;
+            color: white;
+        }
+
+        .axis text {
+            fill: white;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id='map'></div>
+    <h1>Unemployment in Kentucky Counties | 2001-2013</h1>
+        <div id="ui-controls">
+            <label><span class="min">2000</span><span class="max">2013</span>
+                <input type="range" min="2000", max="2013",
+                        value="2000", step="1" class="year-slider"></input>
+            </label>
+    </div>
+
+<script>
+
+  var options = {
+      center: [0,0],
+      zoom: 2,
+      minZoom: 2,
+      maxZoom: 2,
+      dragging: true,
+      zoomControl: false
+  }
+
+  var defaultStyle = {
+      color: '#ccbbcc',
+      weight: 1.5,
+      fillOpacity: 0.9
+  };
+
+  var highlightStyle = {
+      weight: 5,
+      color: '#FFE13E',
+      opacity: 0.95,
+      fillOpacity: 1
+  };
+
+  var map = L.map('map', options);
+
+  $(document).ready(function() {
+
+    var tiles = L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+        subdomains: 'abcd'
+    });
+    map.addLayer(tiles);
+  });
+
+  // var cities,
+  // year = "_2015";
+
+  $.getJSON('https://jeffs.carto.com/api/v2/sql?format=GeoJSON&q=SELECT * FROM public.un_cities_data')
+  .done(function(data) {
+    console.log(data.features[0].properties);
+    createPropSymbols(data);
+  })
+  .fail(function() { alert("There has been a problem loading the data.")});
+
+  function getRadius(area) {
+      var radius = Math.sqrt(area/Math.PI);
+      return radius * 0.3;
+  }
+
+  // function getColor(d, breaks) {
+  //     if (d <= breaks[1]) {
+  //       return '#FFFFFF';
+  //     } else if (d <= breaks[2]) {
+  //       return '#FFBFEC';
+  //     } else if (d <= breaks[3]) {
+  //       return '#FF7FD9';
+  //     } else if (d <= breaks[4]) {
+  //       return '#FF3FC6'
+  //     } else if (d <= breaks[5]) {
+  //       return '#FF00B4'
+  //     } else {
+  //       return 'red'
+  //     }
+  // }
+
+  function createPropSymbols(data) {
+    cities = L.geoJson(data, {
+        pointToLayer: function(feature,latlng) {
+            return L.circleMarker(latlng, {
+                color: 'white',
+                weight: 1,
+                fillOpacity: 0.5
+            });
+        },
+
+        onEachFeature: function(feature, layer) {
+            var props = feature.properties;
+            var source = props.source;
+            var featLatLng = L.latLng(feature.geometry.coordinates[1],feature.geometry.coordinates[0]);
+            layer.setRadius(getRadius(props._2000));
+            // layer.setStyle({
+            //     fillColor: getColor(props[year], breaks)
+            // });
+
+
+
+            // console.log(source['Hydro']);
+
+            // if (source['Natural Gas']) {
+            //     layer.setStyle(hydroColor).setRadius(getRadius(source['Natural Gas']));
+            // }
+            //
+            // else if (source['Hydro']) {
+            //     layer.setStyle(natGasColor).setRadius(getRadius(source['Hydro']));
+            // }
+
+            // var content = '<b>'+props.plant_name+'</b><br>'+props.capacity+' MW<br>';
+            // for(var fuel in source){
+            //     content+='<b>'+fuel+'</b>: '+source[fuel].toLocaleString()+' MW<br>';
+            // }
+            // content+='This plant is <b>'+(featLatLng.distanceTo(cityLatLng)/1000).toLocaleString()+' km</b> from '+city.name;
+
+            layer.on('mouseover', function() {
+                // layer.bindPopup(content).openPopup();
+                layer.setStyle({
+                    fillOpacity: 1
+                });
+            });
+
+            layer.on('mouseout', function() {
+                // layer.closePopup();
+                layer.setStyle({
+                    fillOpacity: 0.5
+                });
+            });
+        }
+    }).addTo(map);
+  }
+
+</script>
+</body>
+</html>
