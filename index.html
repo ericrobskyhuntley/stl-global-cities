@@ -11,132 +11,11 @@
     <script src="https://d3js.org/d3.v3.min.js"></script>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" integrity="sha512-M2wvCLH6DSRazYeZRIm1JnYyh22purTM+FDB5CsyxtQJYeKq83arPe5wgbNmcFXGqiSH2XR8dT/fJISVA1r/zQ==" crossorigin=""/>
+    <link rel="stylesheet" href="./style.css" />
     <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js" integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log==" crossorigin=""></script>
     <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
 
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: whitesmoke;
-            font-family: Lato, sans-serif;
-            color: #0D0000;
-        }
-        header {
-            padding: 6px 10%;
-        }
-        h1 {
-            position: absolute;
-            z-index: 100;
-            top: 10px;
-            left: 15px;
-            padding: 8px 15px;
-            margin: 0;
-            color: whitesmoke;
-            font-size: 1.5em;
-            background: rgba(75,75,75,0.8);
-            border-radius: 5px;
-        }
-        #map {
-            position: absolute;
-            width: 100%;
-            top: 0;
-            bottom: 0;
-        }
-        footer {
-            padding: 6px 10%;
-            width: 80%;
-        }
-        p {
-            font-size: 1em;
-            color: #001323;
-        }
-
-        .legend {
-            padding: 6px 8px;
-            font-size: 1em;
-            background: rgba(75,75,75,0.8);
-            color: whitesmoke;
-            border-radius: 5px;
-            width: 160px;
-        }
-        .legend h3 {
-            font-size: 1.1em;
-            font-weight: bold;
-            line-height: 1em;
-            color: whitesmoke;
-            margin: 0;
-        }
-        .legend li {
-            list-style-type: none;
-            height: 22px;
-        }
-        .legend span {
-            width: 30px;
-            height: 20px;
-            float: left;
-            margin-right: 10px;
-        }
-
-        #ui-controls {
-            width: 176px;
-            padding: 8px 15px 8px 15px;
-            background: rgba(75,75,75,0);
-            color: whitesmoke;
-            border-radius: 5px;
-        }
-        .year-slider {
-            width: 100%;
-            -webkit-appearance: none !important;
-            background:white;
-            height:1px;
-            color: white;
-        }
-
-        label {
-            font-size: 1.1em;
-            font-weight: bold;
-        }
-
-        #ui-controls .min {
-            float: left;
-        }
-        #ui-controls .max {
-            float: right;
-        }
-
-        .info {
-            padding: 6px 8px;
-            font-size: 1em;
-            background: rgba(75,75,75,0.0);
-            color: whitesmoke;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            border-radius: 5px;
-            text-align: left;
-        }
-
-        .info h3 {
-            margin:0;
-        }
-
-        .line {
-            fill: none;
-            stroke: white;
-            stroke-width: 1px;
-        }
-
-        .axis path,
-        .axis line {
-            fill: none;
-            stroke: white;
-            stroke-width: 0.5;
-            shape-rendering: crispEdges;
-            color: white;
-        }
-
-        .axis text {
-            fill: white;
-        }
 
     </style>
 </head>
@@ -150,7 +29,6 @@
     </div>
 
 <script>
-
   var options = {
       center: [0,0],
       zoom: 2,
