@@ -40,6 +40,10 @@
   var year = 2015;
   // if true, graph will be hidden on mouseout
   var graphHide = false;
+  // scale factor for proportional symbols
+  var scaleFactor = 0.025;
+  // minimum value for legend
+  var legendSymMin = 1000;
 
 
   $(document).ready(function() {
@@ -214,15 +218,14 @@
   } //end updatePropSymbols();
 
   function calcPropRadius(value) {
-    var scaleFactor = 0.025;
     var area = value * scaleFactor;
     return Math.sqrt(area/Math.PI)*2;
   }
 
   function createLegend(min, max) {
-    console.log(max);
-    if (min < 2500) {
-      min = 2500;
+
+    if (min < legendSymMin) {
+      min = legendSymMin;
     }
 
     function roundNumber(inNumber) {
@@ -248,23 +251,19 @@
       for (var i = 0; i <= classes.length-1; i++) {
 
         legendCircle = L.DomUtil.create("div", "legendCircle");
-
         currentRadius = calcPropRadius(classes[i]);
-
         margin = -currentRadius - lastRadius - 2;
 
         $(legendCircle).attr("style", "width: " + currentRadius*2 +
           "px; height: " + currentRadius*2 +
           "px; margin-left: " + margin + "px");
-        $(legendCircle).append("<span class='legendValue'>"+(classes[i] / 1000)+"</span>");
+        $(legendCircle).append("<span class='legendValue'>"+Math.round(classes[i] / 1000)+"</span>");
 
         $(symbolsContainer).append(legendCircle);
-
         lastRadius = currentRadius;
       }
 
       $(legendContainer).append(symbolsContainer);
-
       return legendContainer;
 
     };
@@ -286,24 +285,7 @@
       info.addTo(map);
       // but hide it (until user mouses over a feature)
       $(".info").hide();
-  }
-
-  //
-  // function updateLegend(breaks) {
-  //     //select legend class and fill with HTML title
-  //     var legend = $('.legend');
-  //     // var legend = $('.legend').html("<h1>Test</h1><ul>");
-  //     legend.append('<h1>Test</h1>');
-  //     //for each class, append colored <span> and range
-  //     // for (var i = 0; i < breaks.length-1; i++) {
-  //     //     var color = getColor(breaks[i + 1], breaks);
-  //     //
-  //     //     legend.append('<li><span style="background:' + color + '"></span> ' +
-  //     //         (breaks[i]).toFixed(2) + ' &mdash; ' +
-  //     //         (breaks[i + 1]).toFixed(2) + '</li>');
-  //     // }
-  //     // legend.append("</ul>");
-  // }
+  } //end function createGraph()
 
   function createSlider(timestamps) {
       var sliderControl = L.control({ position: 'bottomleft'} );
@@ -328,7 +310,7 @@
           'value': year})
         .on('input change', function () {
           updatePropSymbols($(this).val().toString());
-          $('temporal-legend').text(this.value);
+          $('.temporal-legend').text(this.value);
         });
 
         return slider;
@@ -336,7 +318,7 @@
       // add the control object containing our slider element to the map
       sliderControl.addTo(map);
       createTemporalLegend(year);
-  }
+  } //end function createSlider()
 
   function createTemporalLegend(startTimestamp) {
     var temporalLegend = L.control({position: 'bottomleft'});
@@ -348,7 +330,7 @@
     }
 
     temporalLegend.addTo(map);
-  }
+  } //end function createTemporalLegend()
 
   function updateInfo(layer) {
       //create 'shortcut' variable to layer properties
@@ -492,14 +474,6 @@
           .call(yAxis);
 
   }
-
-  //select element class year-slider
-  $(".year-slider").on('input change', function() {
-      //set year equal to slider value and redraw the map.
-      year = $(this).val();
-      updatePropSymbols(year);
-      createTemporalLegend(year);
-  });
 
 </script>
 </body>

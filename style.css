@@ -89,7 +89,7 @@ p {
 
 .legendValue {
   position: absolute;
-  right: 8px;
+  right: 20px;
 }
 
 /*#ui-controls {
@@ -112,11 +112,16 @@ label {
   font-weight: bold;
 }
 
-#ui-controls .min {
+/*#ui-controls .min {
   float: left;
 }
 #ui-controls .max {
   float: right;
+}*/
+
+h2 {
+  text-align:right;
+  padding: 0px;
 }
 
 .info {
