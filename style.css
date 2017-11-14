@@ -162,6 +162,18 @@ h2 {
   fill: white;
 }
 
+.growthLegend li {
+    list-style-type: none;
+    height: 22px;
+}
+
+.growthLegend span {
+      width: 30px;
+      height: 20px;
+      float: left;
+      margin-right: 10px;
+}
+
 /* see http://brennaobrien.com/blog/2014/05/style-input-type-range-in-every-browser.html for implementing cross-browser input range styling*/
 
 input[type=range]{

@@ -28,7 +28,7 @@
       center: [0,0],
       zoom: 2,
       minZoom: 2,
-      maxZoom: 2,
+      maxZoom: 5,
       dragging: true,
       zoomControl: false
   }
@@ -41,9 +41,10 @@
   // if true, graph will be hidden on mouseout
   var graphHide = false;
   // scale factor for proportional symbols
-  var scaleFactor = 0.025;
+  var scaleFactor = 0.018;
   // minimum value for legend
   var legendSymMin = 1000;
+  var breaks = [0, 0.025, 0.050, 0.10, 0.15, 0.20, Infinity]
 
 
   $(document).ready(function() {
@@ -62,10 +63,10 @@
     .done(function(data) {
 
       var info = getMinMax(data);
-      console.log(info);
       createPropSymbols(info.timestamps, data);
       createGraph(info.timestamps, data);
-      createLegend(info.min, info.max);
+      createPropLegend(info.min, info.max);
+      createGrowthLegend();
       createSlider(info.timestamps);
   })
   .fail(function() { alert("There has been a problem loading the data.")});
@@ -112,23 +113,24 @@
       return radius * 0.15;
   }
 
-  function getClassBreaks() {
-
-      var values = [];
-
-      cities.eachLayer(function(layer) {
-        var props = layer.feature.properties;
-        pct_change = (props['_' + String(year)] - props['_' + String(year - 5)]) / props['_' + String(year - 5)];
-        if (pct_change > 0) {
-          var value = Number(pct_change);
-          values.push(value);
-        }
-      });
-
-      var breaks = ss.quantile(values, [0, 0.2, 0.4, 0.6, 0.8, 1]);
-      breaks.unshift(0);
-      return breaks;
-  } // end getClassBreaks();
+  // function getClassBreaks(y) {
+  //
+  //     var values = [];
+  //
+  //     cities.eachLayer(function(layer) {
+  //       var props = layer.feature.properties;
+  //       pct_change = (props['_' + String(y)] - props['_' + String(y - 5)]) / props['_' + String(y - 5)];
+  //       if (pct_change > 0) {
+  //         var value = Number(pct_change);
+  //         values.push(value);
+  //       }
+  //     });
+  //
+  //     var breaks = ss.quantile(values, [0, 0.2, 0.4, 0.6, 0.8, 1]);
+  //     console.log(breaks);
+  //     breaks.unshift(0);
+  //     return breaks;
+  // } // end getClassBreaks();
 
   // function to get the color value
   function getColor(d, breaks) {
@@ -184,21 +186,20 @@
 
   function updatePropSymbols(t) {
 
-    var timestamp = '_' + t;
-
-    breaks = getClassBreaks(cities);
+    var y = '_' + t;
+    var y_prev = '_' + (t-5);
+    // breaks = getClassBreaks(t);
 
     cities.eachLayer(function(layer) {
 
       var props = layer.feature.properties;
-      var radius = calcPropRadius(props[timestamp]);
-      var popupContent = '<strong>' + props['urbanagg'] + '</strong><hr>' + t + ' Population: ' + props[timestamp];
+      var radius = calcPropRadius(props[y]);
+      var popupContent = '<strong>' + props['urbanagg'] + '</strong><hr>' + t + ' Population: ' + props[y];
       layer.setRadius(radius);
       layer.bindPopup(popupContent, {offset: new L.Point(0,-radius)});
 
 
-      pctChange = (props['_' + String(year)] - props['_' + String(year - 5)]) / props['_' + String(year - 5)];
-
+      pctChange = (props[y] - props[y_prev]) / props[y_prev];
       layer.setStyle({
         fillColor: getColor(pctChange, breaks)
       });
@@ -222,7 +223,7 @@
     return Math.sqrt(area/Math.PI)*2;
   }
 
-  function createLegend(min, max) {
+  function createPropLegend(min, max) {
 
     if (min < legendSymMin) {
       min = legendSymMin;
@@ -271,6 +272,37 @@
     legend.addTo(map);
   } // end function createLegend()
 
+  function createGrowthLegend() {
+      // var breaks = getClassBreaks(year);
+      var growthLegend = L.control({position: 'topleft'});
+
+      growthLegend.onAdd = function (map) {
+          var div = L.DomUtil.create('div', 'growthLegend');
+          return div;
+      };
+
+      growthLegend.addTo(map);
+      updateGrowthLegend(year);
+  }
+
+  // function to update the legend
+  function updateGrowthLegend(t) {
+      var timestamp = '_' + t;
+
+      // breaks = getClassBreaks(t);
+      //select legend class and fill with HTML title
+      var growthLegend = $('.growthLegend').html("<h3>Rate of Growth" + t + "</h3><hr><ul>");
+
+      //for each class, append colored <span> and range
+      for (var i = 0; i < breaks.length-1; i++) {
+          var color = getColor(breaks[i], breaks);
+          growthLegend.append('<li><span style="background:' + color + '"></span> ' +
+              (breaks[i] * 100).toFixed(0) + ' &mdash;' +
+              (breaks[i + 1] * 100).toFixed(0) + '%</li>');
+      }
+      growthLegend.append("</ul>");
+  }
+
   function createGraph() {
       // create a leaflet control in the bottom right of the screen
       var info = L.control({position: 'bottomright'});
@@ -309,8 +341,10 @@
           'step': 5,
           'value': year})
         .on('input change', function () {
-          updatePropSymbols($(this).val().toString());
+          updatePropSymbols($(this).val());
           $('.temporal-legend').text(this.value);
+          updateGrowthLegend($(this).val().toString());
+          // console.log(getClassBreaks($(this).val()));
         });
 
         return slider;
