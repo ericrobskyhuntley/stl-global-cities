@@ -60,7 +60,7 @@ p {
   margin-right: 10px;
 }*/
 
-.legend, .temporal-legend {
+.legend, .temporal-legend, .growthLegend {
   padding: 20px 20px;
   font: 14px/16px Arial, Helvetica, sans-serif;
   /*background: white;*/

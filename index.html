@@ -44,7 +44,7 @@
   var scaleFactor = 0.018;
   // minimum value for legend
   var legendSymMin = 1000;
-  var breaks = [0, 0.025, 0.050, 0.10, 0.15, 0.20, Infinity]
+  var breaks = [];
 
 
   $(document).ready(function() {
@@ -113,39 +113,40 @@
       return radius * 0.15;
   }
 
-  // function getClassBreaks(y) {
-  //
-  //     var values = [];
-  //
-  //     cities.eachLayer(function(layer) {
-  //       var props = layer.feature.properties;
-  //       pct_change = (props['_' + String(y)] - props['_' + String(y - 5)]) / props['_' + String(y - 5)];
-  //       if (pct_change > 0) {
-  //         var value = Number(pct_change);
-  //         values.push(value);
-  //       }
-  //     });
-  //
-  //     var breaks = ss.quantile(values, [0, 0.2, 0.4, 0.6, 0.8, 1]);
-  //     console.log(breaks);
-  //     breaks.unshift(0);
-  //     return breaks;
-  // } // end getClassBreaks();
+  function getClassBreaks(y) {
+
+      var values = [];
+
+      cities.eachLayer(function(layer) {
+        var props = layer.feature.properties;
+        pct_change = (props['_' + String(y)] - props['_' + String(y - 5)]) / props['_' + String(y - 5)];
+        if (pct_change > 0) {
+          var value = Number(pct_change);
+          values.push(value);
+        }
+      });
+
+      var breaks = ss.quantile(values, [0, 0.2, 0.4, 0.6, 0.8, 1]);
+      breaks.unshift(0);
+      return breaks;
+  } // end getClassBreaks();
 
   // function to get the color value
   function getColor(d, breaks) {
       if(d <= breaks[0]) {
           return '#7b3294';
       } else if (d <= breaks[1]) {
-          return '#f7f7f7';
+          return '#edf8e9';
       } else if (d <= breaks[2]) {
-          return '#d9f0d3';
+          return '#c7e9c0';
       } else if (d <= breaks[3]) {
-          return '#a6dba0'
+          return '#a1d99b'
       } else if (d <= breaks[4]) {
-          return '#5aae61'
+          return '#74c476'
       } else if (d <= breaks[5]) {
-          return '#1b7837'
+          return '#31a354'
+      } else if (d > breaks[5]) {
+          return '#006d2c';
       }
   } // end getColor();
 
@@ -179,7 +180,7 @@
             });
         }
       }).addTo(map);
-
+    breaks = getClassBreaks(year);
     updatePropSymbols(year);
   } // end createPropSymbols();
 
@@ -197,7 +198,6 @@
       var popupContent = '<strong>' + props['urbanagg'] + '</strong><hr>' + t + ' Population: ' + props[y];
       layer.setRadius(radius);
       layer.bindPopup(popupContent, {offset: new L.Point(0,-radius)});
-
 
       pctChange = (props[y] - props[y_prev]) / props[y_prev];
       layer.setStyle({
@@ -258,7 +258,7 @@
         $(legendCircle).attr("style", "width: " + currentRadius*2 +
           "px; height: " + currentRadius*2 +
           "px; margin-left: " + margin + "px");
-        $(legendCircle).append("<span class='legendValue'>"+Math.round(classes[i] / 1000)+"</span>");
+        $(legendCircle).append("<span class='legendValue'>" + Math.round(classes[i] / 1000) + "</span>");
 
         $(symbolsContainer).append(legendCircle);
         lastRadius = currentRadius;
@@ -291,14 +291,23 @@
 
       // breaks = getClassBreaks(t);
       //select legend class and fill with HTML title
-      var growthLegend = $('.growthLegend').html("<h3>Rate of Growth" + t + "</h3><hr><ul>");
+      var growthLegend = $('.growthLegend').html("<h3>Rate of Growth</h3><hr><ul>");
 
       //for each class, append colored <span> and range
-      for (var i = 0; i < breaks.length-1; i++) {
+      for (var i = 0; i < breaks.length; i++) {
           var color = getColor(breaks[i], breaks);
-          growthLegend.append('<li><span style="background:' + color + '"></span> ' +
-              (breaks[i] * 100).toFixed(0) + ' &mdash;' +
-              (breaks[i + 1] * 100).toFixed(0) + '%</li>');
+          if (i == 0) {
+            growthLegend.append('<li><span style="background:' + color + '"></span> ' +
+                '< ' + (breaks[i] * 100).toFixed(0) + '%</li>');
+          } else if (i == breaks.length-1) {
+            growthLegend.append('<li><span style="background:' + color + '"></span> ' +
+                '> ' + (breaks[i-1] * 100).toFixed(0) + '%</li>');
+          } else {
+            growthLegend.append('<li><span style="background:' + color + '"></span> ' +
+                (breaks[i - 1] * 100).toFixed(0) + ' &ndash; ' +
+                (breaks[i] * 100).toFixed(0) + '%</li>');
+
+          }
       }
       growthLegend.append("</ul>");
   }
@@ -343,8 +352,6 @@
         .on('input change', function () {
           updatePropSymbols($(this).val());
           $('.temporal-legend').text(this.value);
-          updateGrowthLegend($(this).val().toString());
-          // console.log(getClassBreaks($(this).val()));
         });
 
         return slider;
