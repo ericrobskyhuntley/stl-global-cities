@@ -70,15 +70,12 @@
             return L.circleMarker(latlng, {
                 color: 'white',
                 weight: 1,
-                fillOpacity: 0.5,
-                className: 'animated-icon'
+                fillOpacity: 0.5
             });
         },
 
         onEachFeature: function(feature, layer) {
             var props = feature.properties;
-            var featLatLng = L.latLng(feature.geometry.coordinates[1],feature.geometry.coordinates[0]);
-            // layer.setRadius(getRadius(props['_' + String(year)]));
 
             layer.on('mouseover', function() {
                 // layer.bindPopup(content).openPopup();
@@ -94,11 +91,13 @@
                 });
             });
         }
+
+        createPropSymbols();
+
     }).addTo(map);
 
-    createPropSymbols();
     drawInfo();
-    // drawLegend();
+    createLegend();
     drawSlider();
   })
   .fail(function() { alert("There has been a problem loading the data.")});
@@ -158,9 +157,7 @@
       var content = '<strong>' + props["urbanagg"] + '</strong><br>';
       //  + ': <b> ' + props[year] + '%</b>';
 
-      //underwater basketweaving
       layer.bindPopup(content);
-      //overheating, undereating
       layer.on('mouseover', function() {
           updateInfo(this);
       });
@@ -179,6 +176,77 @@
 
   }
 
+  function createLegend(min, max) {
+
+    cities.eachLayer(function(layer) {
+      var props = layer.feature.properties;
+      pct_change = (props['_' + String(year)] - props['_' + String(year - 5)]) / props['_' + String(year - 5)];
+      layer.setStyle({
+          fillColor: getColor(pct_change, breaks)
+      });
+      layer.setRadius(getRadius(props['_' + String(year)]));
+
+      var content = '<strong>' + props["urbanagg"] + '</strong><br>';
+      //  + ': <b> ' + props[year] + '%</b>';
+
+      layer.bindPopup(content);
+      layer.on('mouseover', function() {
+          updateInfo(this);
+      });
+
+    });
+
+    if (min < 10) {
+      min = 10;
+    }
+
+    function roundNumber(inNumber) {
+      return (Math.round(inNumber/10) * 10);
+    }
+
+    var legend = L.control( { position: 'topright' } );
+
+    legend.onAdd = function(map) {
+      var legendContainer = L.DomUtil.create("div", "legend");
+      var symbolsContainer = L.DomUtil.create("div", "symbolsContainer");
+      var classes = [roundNumber(min), roundNumber((max-min)/2), roundNumber(max)];
+      var lastRadius = 0;
+      var currentRadius;
+      var margin;
+
+      L.DomEvent.addListener(legendContainer, "mousedown", function(e) {
+        L.DomEvent.stopPropagation(e);
+      });
+
+      $(legendContainer).append("<h2 id=’legendTitle’># of somethings</h2>");
+
+      for (var i = 0; i <= classes.length-1; i++) {
+
+        legendCircle = L.DomUtil.create("div", "legendCircle");
+
+        currentRadius = calcPropRadius(classes[i]);
+
+        margin = -currentRadius - lastRadius - 2;
+
+        $(legendCircle).attr("style", "width: " + currentRadius*2 +
+          "px; height: " + currentRadius*2 +
+          "px; margin-left: " + margin + "px");
+        $(legendCircle).append("<span class='legendValue'>"+classes[i]+"</span>");
+
+        $(symbolsContainer).append(legendCircle);
+
+        lastRadius = currentRadius;
+      }
+
+      $(legendContainer).append(symbolsContainer);
+
+      return legendContainer;
+
+    };
+
+    legend.addTo(map);
+  } // end function createLegend()
+
   function drawInfo() {
       // create a leaflet control in the top right of the screen
       var info = L.control({position: 'bottomright'});
@@ -195,16 +263,16 @@
       $(".info").hide();
   }
 
-  // function drawLegend() {
-  //     var legend = L.control({position: 'topright'});
-  //
-  //     legend.onAdd = function (map) {
-  //         var div = L.DomUtil.create('div', 'legend');
-  //         return div;
-  //     };
-  //
-  //     legend.addTo(map);
-  // }
+  function drawLegend() {
+      var legend = L.control({position: 'topright'});
+
+      legend.onAdd = function (map) {
+          var div = L.DomUtil.create('div', 'legend');
+          return div;
+      };
+
+      legend.addTo(map);
+  }
   //
   // function updateLegend(breaks) {
   //     //select legend class and fill with HTML title
@@ -398,6 +466,7 @@
       //set year equal to slider value and redraw the map.
       year = $(this).val();
       createPropSymbols();
+      createLegend();
   });
 
 </script>
