@@ -1,9 +1,8 @@
 body {
   margin: 0;
   padding: 0;
-  background: whitesmoke;
   font-family: Lato, sans-serif;
-  color: #0D0000;
+  color: #fff;
 }
 header {
   padding: 6px 10%;
@@ -17,7 +16,7 @@ h1 {
   margin: 0;
   color: whitesmoke;
   font-size: 1.5em;
-  background: rgba(75,75,75,0.8);
+  /*background: rgba(75,75,75,0.8);*/
   border-radius: 5px;
 }
 #map {
@@ -35,7 +34,7 @@ p {
   color: #001323;
 }
 
-.legend {
+/*.legend {
   padding: 6px 8px;
   font-size: 1em;
   background: rgba(75,75,75,0.8);
@@ -59,15 +58,47 @@ p {
   height: 20px;
   float: left;
   margin-right: 10px;
+}*/
+
+.legend, .temporal-legend {
+  padding: 20px 20px;
+  font: 14px/16px Arial, Helvetica, sans-serif;
+  /*background: white;*/
+  /*background: rgba(0,0,0,0.8);*/
+  /*box-shadow: 0 0 15px rgba(0,0,0,0.2);*/
+  border-radius: 5px;
 }
 
-#ui-controls {
+#legendTitle {
+  text-align: center;
+  margin-bottom: 15px;
+  font-variant: small-caps;
+  color: #FFF;
+}
+.symbolsContainer {
+  float: right;
+  margin-right: 50px;
+}
+
+.legendCircle {
+  border-radius:50%;
+  border: 1px solid #FFF;
+  background: rgba(255, 255, 255, .6);
+  display: inline-block;
+}
+
+.legendValue {
+  position: absolute;
+  right: 8px;
+}
+
+/*#ui-controls {
   width: 176px;
   padding: 8px 15px 8px 15px;
   background: rgba(75,75,75,0);
   color: whitesmoke;
   border-radius: 5px;
-}
+}*/
 .year-slider {
   width: 100%;
   -webkit-appearance: none !important;
@@ -93,7 +124,7 @@ label {
   font-size: 1em;
   background: rgba(75,75,75,0.0);
   color: whitesmoke;
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  /*box-shadow: 0 0 15px rgba(0,0,0,0.2);*/
   border-radius: 5px;
   text-align: left;
 }

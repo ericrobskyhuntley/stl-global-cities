@@ -22,11 +22,6 @@
 
 <body>
     <div id='map'></div>
-    <div id="ui-controls">
-      <label><span class="min">1955</span><span class="max">2025</span>
-          <input type="range" min="1955", max="2025", value="2015", step="5" class="year-slider"></input>
-      </label>
-    </div>
 
 <script>
   var options = {
@@ -43,6 +38,8 @@
   cities;
   // set default year on load
   var year = 2015;
+  // if true, graph will be hidden on mouseout
+  var graphHide = false;
 
 
   $(document).ready(function() {
@@ -59,41 +56,13 @@
 
   $.getJSON('https://jeffs.carto.com/api/v2/sql?format=GeoJSON&q=SELECT * FROM public.un_cities_data')
     .done(function(data) {
+
       var info = getMinMax(data);
       console.log(info);
-      cities = L.geoJson(data, {
-
-          pointToLayer: function(feature,latlng) {
-              return L.circleMarker(latlng, {
-                  color: 'white',
-                  weight: 1,
-                  fillOpacity: 0.5
-              });
-          },
-
-          onEachFeature: function(feature, layer) {
-              var props = feature.properties;
-
-              layer.on('mouseover', function() {
-                  // layer.bindPopup(content).openPopup();
-                  layer.setStyle({
-                      fillOpacity: 1
-                  });
-              });
-
-              layer.on('mouseout', function() {
-                  // layer.closePopup();
-                  layer.setStyle({
-                      fillOpacity: 0.5
-                  });
-              });
-          }
-        }).addTo(map);
-
-    createPropSymbols();
-    drawInfo();
-    // createLegend();
-    drawSlider();
+      createPropSymbols(info.timestamps, data);
+      createGraph(info.timestamps, data);
+      createLegend(info.min, info.max);
+      createSlider(info.timestamps);
   })
   .fail(function() { alert("There has been a problem loading the data.")});
 
@@ -121,11 +90,9 @@
         var columnName = '_' + timestamps[i];
         if (properties[columnName] < min) {
           min = properties[columnName];
-          console.log(min);
         }
         if (properties[columnName] > max) {
           max = properties[columnName];
-          console.log(max);
         }
       }
     }
@@ -157,7 +124,7 @@
       var breaks = ss.quantile(values, [0, 0.2, 0.4, 0.6, 0.8, 1]);
       breaks.unshift(0);
       return breaks;
-  }
+  } // end getClassBreaks();
 
   // function to get the color value
   function getColor(d, breaks) {
@@ -174,115 +141,139 @@
       } else if (d <= breaks[5]) {
           return '#1b7837'
       }
-  }
+  } // end getColor();
 
-  function createPropSymbols() {
+  function createPropSymbols(timestamps, data) {
+
+    cities = L.geoJson(data, {
+
+        pointToLayer: function(feature,latlng) {
+            return L.circleMarker(latlng, {
+                color: 'white',
+                weight: 1,
+                fillOpacity: 0.5
+            });
+        },
+
+        onEachFeature: function(feature, layer) {
+            var props = feature.properties;
+
+            layer.on('mouseover', function() {
+                // layer.bindPopup(content).openPopup();
+                layer.setStyle({
+                    fillOpacity: 1
+                });
+            });
+
+            layer.on('mouseout', function() {
+                // layer.closePopup();
+                layer.setStyle({
+                    fillOpacity: 0.5
+                });
+            });
+        }
+      }).addTo(map);
+
+    updatePropSymbols(year);
+  } // end createPropSymbols();
+
+
+  function updatePropSymbols(t) {
+
+    var timestamp = '_' + t;
 
     breaks = getClassBreaks(cities);
 
     cities.eachLayer(function(layer) {
+
       var props = layer.feature.properties;
-      pct_change = (props['_' + String(year)] - props['_' + String(year - 5)]) / props['_' + String(year - 5)];
+      var radius = calcPropRadius(props[timestamp]);
+      var popupContent = '<strong>' + props['urbanagg'] + '</strong>';
+      layer.setRadius(radius);
+      layer.bindPopup(popupContent, {offset: new L.Point(0,-radius)});
+
+
+      pctChange = (props['_' + String(year)] - props['_' + String(year - 5)]) / props['_' + String(year - 5)];
+
       layer.setStyle({
-          fillColor: getColor(pct_change, breaks)
+        fillColor: getColor(pctChange, breaks)
       });
-      layer.setRadius(getRadius(props['_' + String(year)]));
 
-      var content = '<strong>' + props["urbanagg"] + '</strong><br>';
-      //  + ': <b> ' + props[year] + '%</b>';
-
-      layer.bindPopup(content);
+      // update graph and display
       layer.on('mouseover', function() {
           updateInfo(this);
+          $('.info').show();
       });
 
+      if (graphHide == true) {
+        layer.on('mouseout', function() {
+          $('info').hide();
+        });
+      }
     });
+  } //end updatePropSymbols();
 
-    //on mouseover, show the info box
-    cities.on('mouseover', function() {
-        $(".info").show();
-
-    });
-    // on mouseout, hide the info box
-    // cities.on('mouseout', function() {
-    //     $(".info").hide();
-    // });
-
+  function calcPropRadius(value) {
+    var scaleFactor = 0.025;
+    var area = value * scaleFactor;
+    return Math.sqrt(area/Math.PI)*2;
   }
 
-  // function createLegend(min, max) {
-  //
-  //   cities.eachLayer(function(layer) {
-  //     var props = layer.feature.properties;
-  //     pct_change = (props['_' + String(year)] - props['_' + String(year - 5)]) / props['_' + String(year - 5)];
-  //     layer.setStyle({
-  //         fillColor: getColor(pct_change, breaks)
-  //     });
-  //     layer.setRadius(getRadius(props['_' + String(year)]));
-  //
-  //     var content = '<strong>' + props["urbanagg"] + '</strong><br>';
-  //     //  + ': <b> ' + props[year] + '%</b>';
-  //
-  //     layer.bindPopup(content);
-  //     layer.on('mouseover', function() {
-  //         updateInfo(this);
-  //     });
-  //
-  //   });
-  //
-  //   if (min < 10) {
-  //     min = 10;
-  //   }
-  //
-  //   function roundNumber(inNumber) {
-  //     return (Math.round(inNumber/10) * 10);
-  //   }
-  //
-  //   var legend = L.control( { position: 'topright' } );
-  //
-  //   legend.onAdd = function(map) {
-  //     var legendContainer = L.DomUtil.create("div", "legend");
-  //     var symbolsContainer = L.DomUtil.create("div", "symbolsContainer");
-  //     var classes = [roundNumber(min), roundNumber((max-min)/2), roundNumber(max)];
-  //     var lastRadius = 0;
-  //     var currentRadius;
-  //     var margin;
-  //
-  //     L.DomEvent.addListener(legendContainer, "mousedown", function(e) {
-  //       L.DomEvent.stopPropagation(e);
-  //     });
-  //
-  //     $(legendContainer).append("<h2 id=’legendTitle’># of somethings</h2>");
-  //
-  //     for (var i = 0; i <= classes.length-1; i++) {
-  //
-  //       legendCircle = L.DomUtil.create("div", "legendCircle");
-  //
-  //       currentRadius = calcPropRadius(classes[i]);
-  //
-  //       margin = -currentRadius - lastRadius - 2;
-  //
-  //       $(legendCircle).attr("style", "width: " + currentRadius*2 +
-  //         "px; height: " + currentRadius*2 +
-  //         "px; margin-left: " + margin + "px");
-  //       $(legendCircle).append("<span class='legendValue'>"+classes[i]+"</span>");
-  //
-  //       $(symbolsContainer).append(legendCircle);
-  //
-  //       lastRadius = currentRadius;
-  //     }
-  //
-  //     $(legendContainer).append(symbolsContainer);
-  //
-  //     return legendContainer;
-  //
-  //   };
-  //
-  //   legend.addTo(map);
-  // } // end function createLegend()
+  function createLegend(min, max) {
+    console.log(max);
+    if (min < 2500) {
+      min = 2500;
+    }
 
-  function drawInfo() {
-      // create a leaflet control in the top right of the screen
+    function roundNumber(inNumber) {
+      return (Math.round(inNumber/10) * 10);
+    }
+
+    var legend = L.control( { position: 'topright' } );
+
+    legend.onAdd = function(map) {
+      var legendContainer = L.DomUtil.create('div', 'legend');
+      var symbolsContainer = L.DomUtil.create('div', 'symbolsContainer');
+      var classes = [roundNumber(min), roundNumber((max-min)/2), roundNumber(max)];
+      var lastRadius = 0;
+      var currentRadius;
+      var margin;
+
+      L.DomEvent.addListener(legendContainer, "mousedown", function(e) {
+        L.DomEvent.stopPropagation(e);
+      });
+
+      $(legendContainer).append("<h2 id=’legendTitle’>Population (in Millions)</h2>");
+
+      for (var i = 0; i <= classes.length-1; i++) {
+
+        legendCircle = L.DomUtil.create("div", "legendCircle");
+
+        currentRadius = calcPropRadius(classes[i]);
+
+        margin = -currentRadius - lastRadius - 2;
+
+        $(legendCircle).attr("style", "width: " + currentRadius*2 +
+          "px; height: " + currentRadius*2 +
+          "px; margin-left: " + margin + "px");
+        $(legendCircle).append("<span class='legendValue'>"+(classes[i] / 1000)+"</span>");
+
+        $(symbolsContainer).append(legendCircle);
+
+        lastRadius = currentRadius;
+      }
+
+      $(legendContainer).append(symbolsContainer);
+
+      return legendContainer;
+
+    };
+
+    legend.addTo(map);
+  } // end function createLegend()
+
+  function createGraph() {
+      // create a leaflet control in the bottom right of the screen
       var info = L.control({position: 'bottomright'});
 
       // when info control is added
@@ -297,16 +288,6 @@
       $(".info").hide();
   }
 
-  function drawLegend() {
-      var legend = L.control({position: 'topright'});
-
-      legend.onAdd = function (map) {
-          var div = L.DomUtil.create('div', 'legend');
-          return div;
-      };
-
-      legend.addTo(map);
-  }
   //
   // function updateLegend(breaks) {
   //     //select legend class and fill with HTML title
@@ -324,30 +305,49 @@
   //     // legend.append("</ul>");
   // }
 
-  function drawSlider() {
+  function createSlider(timestamps) {
       var sliderControl = L.control({ position: 'bottomleft'} );
 
       // when we add this control object to the map
       sliderControl.onAdd = function(map) {
 
-          // select an existing DOM element with an id of "ui-controls"
-          var slider = L.DomUtil.get("ui-controls");
+        // create slider DOM element
+        var slider = L.DomUtil.create('input', 'range-slider');
 
-              // when the user clicks on the slider element
-              L.DomEvent.addListener(slider, 'mousedown', function(e) {
+        // when the user clicks on the slider element
+        L.DomEvent.addListener(slider, 'mousedown', function(e) {
+            // prevent the click event from bubbling up to the map
+            L.DomEvent.stopPropagation(e);
+        });
 
-                  // prevent the click event from bubbling up to the map
-                  L.DomEvent.stopPropagation(e);
+        $(slider)
+        .attr({'type': 'range',
+          'max': timestamps[timestamps.length - 1],
+          'min': timestamps[1],
+          'step': 5,
+          'value': year})
+        .on('input change', function () {
+          updatePropSymbols($(this).val().toString());
+          $('temporal-legend').text(this.value);
+        });
 
-              });
-
-          // return the slider from the onAdd method
-          return slider;
+        return slider;
       }
-
       // add the control object containing our slider element to the map
       sliderControl.addTo(map);
+      createTemporalLegend(year);
+  }
 
+  function createTemporalLegend(startTimestamp) {
+    var temporalLegend = L.control({position: 'bottomleft'});
+
+    temporalLegend.onAdd = function(map) {
+      var output = L.DomUtil.create('output', 'temporal-legend');
+      $(output).text(startTimestamp);
+      return output;
+    }
+
+    temporalLegend.addTo(map);
   }
 
   function updateInfo(layer) {
@@ -494,13 +494,11 @@
   }
 
   //select element class year-slider
-  $(".year-slider")
-  //when the input value changes...
-  .on('input change', function() {
+  $(".year-slider").on('input change', function() {
       //set year equal to slider value and redraw the map.
       year = $(this).val();
-      createPropSymbols();
-      createLegend();
+      updatePropSymbols(year);
+      createTemporalLegend(year);
   });
 
 </script>
