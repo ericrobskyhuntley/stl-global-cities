@@ -128,7 +128,8 @@
       });
 
       var breaks = ss.quantile(values, [0, 0.5, 1]);
-      breaks.unshift(0);
+      // breaks.unshift(0);
+      breaks[0] = 0;
       console.log(breaks);
       return breaks;
   } // end getClassBreaks();
@@ -139,9 +140,7 @@
         return 'rgba(123, 50, 148, 0.8)'
       } else if (d <= breaks[1]) {
         return 'rgba(229, 245, 224, 0.8)'
-      } else if (d <= breaks[2]) {
-        return 'rgba(161, 217, 155, 0.8)'
-      } else if (d > breaks[2]) {
+      } else if (d > breaks[1]) {
         return 'rgba(49, 163, 84, 0.8)'
       }
   } // end getColor();
@@ -296,14 +295,14 @@
           var color = getColor(breaks[i], breaks);
           if (i == 0) {
             growthLegend.append('<li><span style="background:' + color + '"></span> ' +
-                '< ' + (breaks[i] * 100).toFixed(0) + '%</li>');
+                '< ' + (breaks[i] * 100).toFixed(1) + '%</li>');
           } else if (i == breaks.length-1) {
             growthLegend.append('<li><span style="background:' + color + '"></span> ' +
-                '> ' + (breaks[i-1] * 100).toFixed(0) + '%</li>');
+                '> ' + (breaks[i-1] * 100).toFixed(1) + '%</li>');
           } else {
             growthLegend.append('<li><span style="background:' + color + '"></span> ' +
-                (breaks[i - 1] * 100).toFixed(0) + ' &ndash; ' +
-                (breaks[i] * 100).toFixed(0) + '%</li>');
+                (breaks[i - 1] * 100).toFixed(1) + ' &ndash; ' +
+                (breaks[i] * 100).toFixed(1) + '%</li>');
 
           }
       }
