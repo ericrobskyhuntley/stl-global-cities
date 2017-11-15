@@ -24,6 +24,7 @@ var legendSymMin = 1000;
 var breaks = [];
 var graphToggle = false;
 
+// prevent Leaflet interference with user scroll
 map.on('focus', function() { map.scrollWheelZoom.enable(); map.touchZoom.enable();});
 map.on('blur', function() { map.scrollWheelZoom.disable(); map.touchZoom.disable(); });
 
@@ -31,7 +32,7 @@ map.on('blur', function() { map.scrollWheelZoom.disable(); map.touchZoom.disable
 $(document).ready(function() {
 
   var tiles = L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+      attribution: 'United Nations &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
       subdomains: 'abcd',
       minZoom: 0,
       maxZoom: 18
