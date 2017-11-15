@@ -187,29 +187,32 @@
     // breaks = getClassBreaks(t);
 
     cities.eachLayer(function(layer) {
-
       var props = layer.feature.properties;
-      var radius = calcPropRadius(props[y]);
-      var popupContent = '<strong>' + props['urbanagg'] + '</strong><hr>' + t + ' Population: ' + props[y];
-      layer.setRadius(radius);
-      layer.bindPopup(popupContent, {offset: new L.Point(0,-radius)});
+      if (props[y] > 0) {
+        var radius = calcPropRadius(props[y]);
+        var popupContent = '<h4>' + props['urbanagg'] + '</h4><hr><div class = "fact-chunk">' +
+        '<h5>' + (props[y] / 1000).toFixed(1) + ' Million</h5>Population in ' + t + '</div><div class = "fact-chunk">' +
+        '<h5>' + ((props[y] - props['_1950'])/props['_1950'] * 100).toFixed(1) + '%</h5>Growth 1950 - ' + t + '</div>';
+        layer.setRadius(radius);
+        layer.bindPopup(popupContent, {offset: new L.Point(0,-radius)});
 
-      pctChange = (props[y] - props[y_prev]) / props[y_prev];
-      layer.setStyle({
-        fillColor: getColor(pctChange, breaks)
-      });
-
-      if (graphToggle == true) {
-        // update graph and display
-        layer.on('mouseover', function() {
-            updateInfo(this);
-            $('.info').show();
+        pctChange = (props[y] - props[y_prev]) / props[y_prev];
+        layer.setStyle({
+          fillColor: getColor(pctChange, breaks)
         });
 
-        if (graphHide == true) {
-          layer.on('mouseout', function() {
-            $('info').hide();
+        if (graphToggle == true) {
+          // update graph and display
+          layer.on('mouseover', function() {
+              updateInfo(this);
+              $('.info').show();
           });
+
+          if (graphHide == true) {
+            layer.on('mouseout', function() {
+              $('info').hide();
+            });
+          }
         }
       }
     });
@@ -333,7 +336,6 @@
 
         // create slider DOM element
         var slider = L.DomUtil.create('input', 'range-slider');
-
         // when the user clicks on the slider element
         L.DomEvent.addListener(slider, 'mousedown', function(e) {
             // prevent the click event from bubbling up to the map
@@ -346,16 +348,26 @@
           'min': timestamps[1],
           'step': 5,
           'value': year})
+        .each(function() {
+          var a = $(this).context;
+          // var vals = a.max - a.min;
+          for (var i = Number(a.min); i <= Number(a.max); i = i + 5) {
+            var el = $('<label>' + i + '</label>');
+            $(slider).append(el);
+          }
+        })
         .on('input change', function () {
           updatePropSymbols($(this).val());
-          $('.temporal-legend').text(this.value);
+          $('.temporal-legend').html("<h3 class = 'year-key'>" + this.value + "</h3>");
         });
 
         return slider;
       }
+
       // add the control object containing our slider element to the map
       sliderControl.addTo(map);
       createTemporalLegend(year);
+
   } //end function createSlider()
 
   function createTemporalLegend(startTimestamp) {
@@ -363,7 +375,9 @@
 
     temporalLegend.onAdd = function(map) {
       var output = L.DomUtil.create('output', 'temporal-legend');
-      $(output).text(startTimestamp);
+      $(output).html(function() {
+        return "<h3 class='year-key'>" + startTimestamp + "</h3>";
+      });
       return output;
     }
 

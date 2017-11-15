@@ -60,14 +60,27 @@ p {
   margin-right: 10px;
 }*/
 
-.legend, .temporal-legend, .growthLegend {
+.legend, .growthLegend {
   padding: 20px 20px;
   font: 14px/16px Arial, Helvetica, sans-serif;
-  /*background: white;*/
-  /*background: rgba(0,0,0,0.8);*/
+  background: rgba(0,0,0, 0.7);
   /*box-shadow: 0 0 15px rgba(0,0,0,0.2);*/
-  border-radius: 5px;
+  border-radius: 0;
 }
+
+.temporal-legend {
+  padding: 20px 20px;
+  font: 14px/16px Arial, Helvetica, sans-serif;
+  /*background: rgba(0,0,0, 0.7);*/
+  /*box-shadow: 0 0 15px rgba(0,0,0,0.2);*/
+  border-radius: 0;
+}
+
+
+
+/*.temporal-legend {
+  width:100%;
+}*/
 
 h3 {
   text-align: right;
@@ -116,13 +129,6 @@ label {
   background: #111;
   border-radius: 0px;
 }
-
-/*#ui-controls .min {
-  float: left;
-}
-#ui-controls .max {
-  float: right;
-}*/
 
 h2 {
   text-align:right;
@@ -177,6 +183,23 @@ h2 {
       border: 1px solid #FFF;
 }
 
+.fact-chunk {
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.fact-chunk h5 {
+  font-size: 1.5em;
+  padding-bottom: 0px;
+  margin: 0px;
+  font-style: normal;
+}
+
+.year-key {
+  font-size: 5em;
+  font-style: italic;
+}
+
 /* see http://brennaobrien.com/blog/2014/05/style-input-type-range-in-every-browser.html for implementing cross-browser input range styling*/
 
 input[type=range]{
@@ -184,13 +207,13 @@ input[type=range]{
     /*border: 1px solid white;*/
 
     /*required for proper track sizing in FF*/
-    width: 300px;
+    width: 400px;
     /*margin: 20px;*/
     padding: 20px;
 }
 
 input[type=range]::-moz-range-track {
-    width: 300px;
+    width: 400px;
     height: 1.5px;
     background: #fff;
     border: none;
@@ -205,4 +228,10 @@ input[type=range]::-moz-range-thumb {
     background: #fff;
 }
 
-/*hide the outline behind the border*/
+input label {
+    /*position: absolute;*/
+    width: 20px;
+    margin-left: -10px;
+    text-align: center;
+    margin-top: 20px;
+}
