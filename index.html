@@ -2,26 +2,26 @@
 <html>
 
 <head>
-    <meta charset=utf-8 />
-    <title>STL Megacities Map</title>
-    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<meta charset=utf-8 />
+<title>STL Megacities Map</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
 
-    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
-    <script src="https://unpkg.com/simple-statistics@5.0.0/dist/simple-statistics.min.js"></script>
-    <script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+<script src="https://unpkg.com/simple-statistics@5.0.0/dist/simple-statistics.min.js"></script>
+<script src="https://d3js.org/d3.v3.min.js"></script>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" integrity="sha512-M2wvCLH6DSRazYeZRIm1JnYyh22purTM+FDB5CsyxtQJYeKq83arPe5wgbNmcFXGqiSH2XR8dT/fJISVA1r/zQ==" crossorigin=""/>
-    <link rel="stylesheet" href="./style.css" />
-    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js" integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log==" crossorigin=""></script>
-    <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" integrity="sha512-M2wvCLH6DSRazYeZRIm1JnYyh22purTM+FDB5CsyxtQJYeKq83arPe5wgbNmcFXGqiSH2XR8dT/fJISVA1r/zQ==" crossorigin=""/>
+<link rel="stylesheet" href="./style.css" />
+<script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js" integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log==" crossorigin=""></script>
+<link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
 
-    <style>
+<style>
 
-    </style>
+</style>
 </head>
 
 <body>
-    <div id='map'></div>
+<div id='map'></div>
 
 <script>
   var options = {
@@ -30,7 +30,9 @@
       minZoom: 2,
       maxZoom: 5,
       dragging: true,
-      zoomControl: false
+      zoomControl: false,
+      scrollWheelZoom: false,
+      touchZoon: false
   }
 
   // define global variables
@@ -46,6 +48,9 @@
   var legendSymMin = 1000;
   var breaks = [];
   var graphToggle = false;
+
+  map.on('focus', function() { map.scrollWheelZoom.enable(); map.touchZoom.enable();});
+  map.on('blur', function() { map.scrollWheelZoom.disable(); map.touchZoom.disable(); });
 
 
   $(document).ready(function() {
@@ -74,16 +79,12 @@
 
   // function to generate an array of years at interval
   function dateRange(min, max, int) {
-
     years = [];
-
     for(var i=1950;i<=2025;i+=5){
       years.push(i);
     }
-
     return years;
-
-  }
+  } // end dateRange();
 
   function getMinMax(data) {
     var timestamps = dateRange(1950, 2025, 5);
