@@ -127,27 +127,22 @@
         }
       });
 
-      var breaks = ss.quantile(values, [0, 0.2, 0.4, 0.6, 0.8, 1]);
+      var breaks = ss.quantile(values, [0, 0.5, 1]);
       breaks.unshift(0);
+      console.log(breaks);
       return breaks;
   } // end getClassBreaks();
 
   // function to get the color value
   function getColor(d, breaks) {
       if(d <= breaks[0]) {
-          return '#7b3294';
+        return 'rgba(123, 50, 148, 0.8)'
       } else if (d <= breaks[1]) {
-          return '#edf8e9';
+        return 'rgba(229, 245, 224, 0.8)'
       } else if (d <= breaks[2]) {
-          return '#c7e9c0';
-      } else if (d <= breaks[3]) {
-          return '#a1d99b'
-      } else if (d <= breaks[4]) {
-          return '#74c476'
-      } else if (d <= breaks[5]) {
-          return '#31a354'
-      } else if (d > breaks[5]) {
-          return '#006d2c';
+        return 'rgba(161, 217, 155, 0.8)'
+      } else if (d > breaks[2]) {
+        return 'rgba(49, 163, 84, 0.8)'
       }
   } // end getColor();
 
@@ -159,7 +154,7 @@
             return L.circleMarker(latlng, {
                 color: 'white',
                 weight: 1,
-                fillOpacity: 0.5
+                fillOpacity: 0.7
             });
         },
 
@@ -176,7 +171,7 @@
             layer.on('mouseout', function() {
                 // layer.closePopup();
                 layer.setStyle({
-                    fillOpacity: 0.5
+                    fillOpacity: 0.6
                 });
             });
         }

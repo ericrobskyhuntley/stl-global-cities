@@ -168,10 +168,13 @@ h2 {
 }
 
 .growthLegend span {
-      width: 30px;
-      height: 20px;
+      width: 15px;
+      height: 15px;
       float: left;
       margin-right: 10px;
+      border-radius: 100%;
+      border-color: #fff;
+      border: 1px solid #FFF;
 }
 
 /* see http://brennaobrien.com/blog/2014/05/style-input-type-range-in-every-browser.html for implementing cross-browser input range styling*/
