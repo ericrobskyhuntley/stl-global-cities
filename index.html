@@ -45,6 +45,7 @@
   // minimum value for legend
   var legendSymMin = 1000;
   var breaks = [];
+  var graphToggle = false;
 
 
   $(document).ready(function() {
@@ -204,16 +205,18 @@
         fillColor: getColor(pctChange, breaks)
       });
 
-      // update graph and display
-      layer.on('mouseover', function() {
-          updateInfo(this);
-          $('.info').show();
-      });
-
-      if (graphHide == true) {
-        layer.on('mouseout', function() {
-          $('info').hide();
+      if (graphToggle == true) {
+        // update graph and display
+        layer.on('mouseover', function() {
+            updateInfo(this);
+            $('.info').show();
         });
+
+        if (graphHide == true) {
+          layer.on('mouseout', function() {
+            $('info').hide();
+          });
+        }
       }
     });
   } //end updatePropSymbols();
