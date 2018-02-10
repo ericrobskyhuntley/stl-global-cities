@@ -4,7 +4,7 @@ var options = {
     zoom: 2,
     minZoom: 2,
     maxZoom: 5,
-    dragging: true,
+    dragging: false,
     zoomControl: false,
     scrollWheelZoom: false,
     touchZoon: false
