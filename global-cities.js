@@ -3,11 +3,11 @@ var options = {
     center: [0,0],
     zoom: 2,
     minZoom: 2,
-    maxZoom: 5,
+    maxZoom: 2,
     dragging: false,
     zoomControl: false,
     scrollWheelZoom: false,
-    touchZoon: false
+    touchZoom: false
 }
 
 // define global variables
@@ -16,13 +16,13 @@ cities;
 // set default year on load
 var year = 2015;
 // if true, graph will be hidden on mouseout
-var graphHide = false;
+var graphHide = true;
 // scale factor for proportional symbols
 var scaleFactor = 0.018;
 // minimum value for legend
 var legendSymMin = 1000;
 var breaks = [];
-var graphToggle = false;
+var graphToggle = true;
 
 // prevent Leaflet interference with user scroll
 map.on('focus', function() { map.scrollWheelZoom.enable(); map.touchZoom.enable();});
@@ -31,6 +31,8 @@ map.on('blur', function() { map.scrollWheelZoom.disable(); map.touchZoom.disable
 
 $(document).ready(function() {
 
+  query = "SELECT * FROM public.un_cities_data";
+
   var tiles = L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png', {
       attribution: 'United Nations &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
       subdomains: 'abcd',
@@ -38,25 +40,23 @@ $(document).ready(function() {
       maxZoom: 18
   });
   map.addLayer(tiles);
+
+  $.getJSON('https://jeffs.carto.com/api/v2/sql?format=GeoJSON&q=' + query)
+    .done(function(data) {
+      var info = getMinMax(data);
+      createPropSymbols(info.timestamps, data);
+      createGraph(info.timestamps, data);
+      createPropLegend(info.min, info.max);
+      createGrowthLegend();
+      createSlider(info.timestamps);
+  })
+  .fail(function() { alert("There has been a problem loading the data.")});
 });
-
-
-$.getJSON('https://jeffs.carto.com/api/v2/sql?format=GeoJSON&q=SELECT * FROM public.un_cities_data')
-  .done(function(data) {
-
-    var info = getMinMax(data);
-    createPropSymbols(info.timestamps, data);
-    createGraph(info.timestamps, data);
-    createPropLegend(info.min, info.max);
-    createGrowthLegend();
-    createSlider(info.timestamps);
-})
-.fail(function() { alert("There has been a problem loading the data.")});
 
 // function to generate an array of years at interval
 function dateRange(min, max, int) {
   years = [];
-  for(var i=1950;i<=2025;i+=5){
+  for(var i=min;i<=max;i+=5){
     years.push(i);
   }
   return years;
@@ -375,18 +375,17 @@ function updateInfo(layer) {
       h = 200 - m.top - m.bottom;
 
       //Y-axis scale method
-      var y = d3.scale.linear()
+      var y = d3.scaleLinear()
           .range([h,0]);
 
       //X-axis scale method
-      var x = d3.scale.linear()
+      var x = d3.scaleLinear()
           .range([0, w]);
 
       //path constructor for line grapht data
-      var valueLine = d3.svg.line()
+      var valueLine = d3.line()
           .x(function(d) { return x(d.year); })
-          .y(function(d) { return y(d.population); })
-          .interpolate("linear");
+          .y(function(d) { return y(d.population); });
 
       //select div of class info and append an svg to contain line graph
       var svg = d3.select(".info")
@@ -416,16 +415,14 @@ function updateInfo(layer) {
       }
 
       //Declare X axis constructor
-      var xAxis = d3.svg.axis().scale(x)
+      var xAxis = d3.axisBottom().scale(x)
           //Format tick labels as dates (i.e., no comma-separation)
           .tickFormat(d3.format("d"))
-          .orient("bottom")
           //Display every year.
           .ticks(data.length);
 
       //Declare Y axis constructor
-      var yAxis = d3.svg.axis().scale(y)
-          .orient("left")
+      var yAxis = d3.axisLeft().scale(y)
           .ticks(5);
 
       //Set X and Y axis scale domains
